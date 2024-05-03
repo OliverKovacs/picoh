@@ -7,16 +7,16 @@
 #include <stdint.h>
 #include "pico/stdlib.h"
 
-#define DHT_CHECK_TIMEOUT(r)                    \
-{                                               \
-    const int32_t result = (r);                 \
-    if (result == -1) return DHT_TIMEOUT;       \
+#define DHT_CHECK_TIMEOUT(r)                        \
+{                                                   \
+    const int32_t result = (r);                     \
+    if (result == DHT_TIMEOUT) return DHT_TIMEOUT;  \
 }
 
 typedef enum DhtResult {
     DHT_SUCCESS = 0,
-    DHT_TIMEOUT = 1,
-    DHT_ERROR = 2,
+    DHT_TIMEOUT = -1,
+    DHT_ERROR = -2,
 } DhtResult;
 
 typedef union DhtData {
@@ -41,7 +41,7 @@ const uint32_t DHT_TRIES = 5;
 static inline int32_t dht_count(uint32_t pin, bool state) {
     uint32_t count = 0;
     while (gpio_get(pin) == state) {
-        if (count++ >= DHT_TIMEOUT_COUNT) return -1;
+        if (count++ >= DHT_TIMEOUT_COUNT) return DHT_TIMEOUT;
     }
     return count;
 }
