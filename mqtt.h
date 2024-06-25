@@ -15,6 +15,12 @@
 static ip_addr_t ip_addr;
 static int32_t inpub_id;
 
+typedef struct connection_cb_arg {
+ 	mqtt_incoming_publish_cb_t pub_cb;
+	mqtt_incoming_data_cb_t data_cb;
+    void *arg;
+} connection_cb_arg;
+
 static void mqtt_connection_cb(
     mqtt_client_t *client,
     void *arg,
@@ -60,7 +66,13 @@ static void mqtt_incoming_publish_cb(
     inpub_id = 0;
 }
 
-void lwip_mqtt_connect(mqtt_client_t *client) {
+connection_cb_arg CONNECTION_CB_ARG_DEFAULT = {
+    mqtt_incoming_publish_cb,
+    mqtt_incoming_data_cb,
+    NULL
+};
+
+void lwip_mqtt_connect(mqtt_client_t *client, void *arg) {
     ip4addr_aton(MQTT_HOST, &ip_addr);
 
     struct mqtt_connect_client_info_t ci;
@@ -74,7 +86,7 @@ void lwip_mqtt_connect(mqtt_client_t *client) {
         client, &ip_addr,
         MQTT_PORT,
         mqtt_connection_cb,
-        NULL,
+        arg,
         &ci
     );
     cyw43_arch_lwip_end();
@@ -97,13 +109,28 @@ static void mqtt_connection_cb(
 ) {
     if (status == MQTT_CONNECT_ACCEPTED) {
         printf("mqtt_connection_cb: successfully connected\n");
+
+        connection_cb_arg *sarg = arg;
         
         // setup callback for incoming publish requests
         cyw43_arch_lwip_begin();
         mqtt_set_inpub_callback(
             client,
-            mqtt_incoming_publish_cb,
-            mqtt_incoming_data_cb,
+            sarg->pub_cb,
+            sarg->data_cb,
+            sarg->arg
+            // mqtt_incoming_publish_cb,
+            // mqtt_incoming_data_cb,
+            // NULL
+        );
+        cyw43_arch_lwip_end();
+
+        cyw43_arch_lwip_begin();
+        err_t err = mqtt_subscribe(
+            client,
+            "home/led",             // topic
+            1,                      // qos
+            mqtt_sub_request_cb,    // callback
             arg
         );
         cyw43_arch_lwip_end();
@@ -123,7 +150,7 @@ static void mqtt_connection_cb(
         printf("mqtt: connection result: %d\n", status);
 
         // try to reconnect
-        lwip_mqtt_connect(client);
+        lwip_mqtt_connect(client, arg);
     }
 }
 
