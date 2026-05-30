@@ -17,20 +17,22 @@ int32_t util_try_connect() {
 int32_t util_connect() {
     if (cyw43_arch_init_with_country(CYW43_COUNTRY_AUSTRIA)) {
         puts("failed to initialise");
-        return -1;
+        return 1;
     }
-    puts("initialised");
+    puts("initialisd");
 
     cyw43_arch_enable_sta_mode();
-    
+
     int32_t err = util_try_connect();
-    while (err) {
-        printf("failed to connect: err %d\n", err);
+    for (size_t i = 0; i < 5 && err; i++) {
+        printf("failed to connect: err %ld\n", err);
         sleep_ms(1000);
         err = util_try_connect();
     }
-    puts("connected");
 
+    if (err) return err;
+
+    puts("connected");
     return 0;
 }
 

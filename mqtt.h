@@ -16,8 +16,8 @@ static ip_addr_t ip_addr;
 static int32_t inpub_id;
 
 typedef struct connection_cb_arg {
- 	mqtt_incoming_publish_cb_t pub_cb;
-	mqtt_incoming_data_cb_t data_cb;
+        mqtt_incoming_publish_cb_t pub_cb;
+        mqtt_incoming_data_cb_t data_cb;
     void *arg;
 } connection_cb_arg;
 
@@ -33,8 +33,11 @@ static void mqtt_incoming_data_cb(
     uint16_t len,
     uint8_t flags
 ) {
+    (void)arg;
+    (void)data;
+
     printf(
-        "mqtt: incoming publish payload with length %d, flags %u\n",
+        "mqtt: incoming publish payload with length %d, flags %lu\n",
         len,
         (uint32_t)flags
     );
@@ -56,12 +59,14 @@ static void mqtt_incoming_publish_cb(
     const char *topic,
     uint32_t topic_len
 ) {
+    (void)arg;
+
     printf(
-        "mqtt: incoming publish at topic %s with total length %u\n",
+        "mqtt: incoming publish at topic %s with total length %lu\n",
         topic,
         (uint32_t)topic_len
     );
-    
+
     // decode topic string into a user defined reference
     inpub_id = 0;
 }
@@ -91,15 +96,17 @@ void lwip_mqtt_connect(mqtt_client_t *client, void *arg) {
     );
     cyw43_arch_lwip_end();
 
-    MQTT_ERR("mqtt_client_connect: err: %d\n", err);
+    MQTT_ERR("mqtt_client_connect: err: %ld\n", err);
 }
 
 static void mqtt_sub_request_cb(void *arg, err_t result) {
-    MQTT_ERR("mqtt: subscribe result: %d\n", result);
+    (void)arg;
+    MQTT_ERR("mqtt: subscribe result: %ld\n", result);
 }
 
 static void mqtt_pub_request_cb(void *arg, err_t result) {
-    MQTT_ERR("mqtt: publish result: %d\n", result);
+    (void)arg;
+    MQTT_ERR("mqtt: publish result: %ld\n", result);
 }
 
 static void mqtt_connection_cb(
@@ -111,7 +118,7 @@ static void mqtt_connection_cb(
         printf("mqtt_connection_cb: successfully connected\n");
 
         connection_cb_arg *sarg = arg;
-        
+
         // setup callback for incoming publish requests
         cyw43_arch_lwip_begin();
         mqtt_set_inpub_callback(
@@ -134,7 +141,9 @@ static void mqtt_connection_cb(
             arg
         );
         cyw43_arch_lwip_end();
-        
+
+        (void)err; // TODO error check.
+
         // cyw43_arch_lwip_begin();
         // err_t err = mqtt_subscribe(
         //     client,
@@ -154,6 +163,7 @@ static void mqtt_connection_cb(
     }
 }
 
+// TODO error handling
 void lwip_mqtt_publish(
     mqtt_client_t *client,
     char *topic,
@@ -176,7 +186,7 @@ void lwip_mqtt_publish(
     );
     cyw43_arch_lwip_end();
 
-    MQTT_ERR("mqtt_publish: err: %d\n", err);
+    MQTT_ERR("mqtt_publish: err: %ld\n", err);
 }
 
 # endif /* MQTT_H */
